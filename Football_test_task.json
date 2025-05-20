@@ -1,0 +1,588 @@
+{
+  "name": "Football test task",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7889b26e-2ae0-4a24-a0e5-44f7860bf5a0",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appyuuJygysW3Ljiv",
+          "mode": "list",
+          "cachedResultName": "Football test task",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbltKyolWyciOL0rC",
+          "mode": "list",
+          "cachedResultName": "Projects copy",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv/tbltKyolWyciOL0rC"
+        },
+        "returnAll": false,
+        "limit": 5,
+        "options": {},
+        "sort": {
+          "property": [
+            {
+              "field": "Created",
+              "direction": "desc"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "33c7183c-4789-4707-b89f-1b96947b8d40",
+      "name": "Airtable",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "a3QLZkDWF3V1UlBG",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        420,
+        0
+      ],
+      "id": "ad420f0c-196d-4a0f-8274-c36a3d6ec93a",
+      "name": "Loop Over Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\n\"\"\"\n{{ $json.Post }}\n\"\"\"\",\n\"response_format\": \"json_object\"\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Analyze football match data and return JSON with these EXACT fields:\n\n```json\n{\n  \\\"Teams\\\": \\\"[normalized names or 'no data']\\\",\n  \\\"Match Date\\\": \\\"[YYYY-MM-DD or 'no data']\\\",\n  \\\"Prediction EN\\\": \\\"[1-2 sentence forecast in English]\\\",\n  \\\"Prediction UA\\\": \\\"[Same forecast in Ukrainian]\\\",\n  \\\"Pass\\\": [true/false]\n}\n\nSTRICT RULES:\n\nData Extraction:\n\nTeams: Normalize to 'Team A vs Team B' format (remove FC/, extra spaces)\n\nDate: Convert all formats to YYYY-MM-DD HH:MM (calculate relative dates like 'tomorrow')\n\nTime: Optional (include if available in HH:MM format)\n\nPrediction Generation:\n\nAlways generate both EN/UA predictions (never 'no data')\n\nEN format: '[Team X] likely to win [X-X] because [1 reason]'\n\nUA format: Proper Ukrainian translation of EN prediction\n\nBase predictions on available data or write 'neutral forecast' if no data\n\nValidation:\n\nPass=true ONLY when Teams, Date AND at least one prediction field contain valid data\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        680,
+        20
+      ],
+      "id": "3448fc37-6ff7-4e13-8168-550e99ad2957",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "maxTokens": 300,
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        160
+      ],
+      "id": "ab1a755e-4bd9-4406-b32b-a1a9388eb063",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "E9sdDy7O1Kor3QE5",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"teams\": \"[normalized names or 'no data']\",\n  \"match_date\": \"[YYYY-MM-DD or 'no data']\",\n  \"prediction_en\": \"[1-2 sentence forecast in English or 'no data']\",\n  \"prediction_ua\": \"[Same forecast in Ukrainian or 'no data']\",\n  \"pass\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        860,
+        160
+      ],
+      "id": "88038c03-f28a-4a62-bad3-5116fd3a1d3c",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "612b28af-8e6f-4eb8-9f64-4b7d1f83eb7d",
+              "leftValue": "={{ $json.output.pass }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        20
+      ],
+      "id": "2b5405a3-2aff-41a8-affe-4badeee5b479",
+      "name": "Check data"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appyuuJygysW3Ljiv",
+          "mode": "list",
+          "cachedResultName": "Football test task",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbltKyolWyciOL0rC",
+          "mode": "list",
+          "cachedResultName": "Projects copy",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv/tbltKyolWyciOL0rC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Airtable').item.json.id }}",
+            "Teams": "={{ $json.output.teams }}",
+            "Match Date": "={{ $json.output['match_date'] }}",
+            "Prediction EN": "={{ $json.output['prediction_en'] }}",
+            "Prediction UA": "={{ $json.output['prediction_ua'] }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Form",
+              "displayName": "Form",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Teams",
+              "displayName": "Teams",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Match Date",
+              "displayName": "Match Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Form Info",
+              "displayName": "Form Info",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prediction EN",
+              "displayName": "Prediction EN",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prediction UA",
+              "displayName": "Prediction UA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created",
+              "displayName": "Created",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        -40
+      ],
+      "id": "e9ad5da7-52c6-41a2-bd93-63ac0058247d",
+      "name": "Airtable succes",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "a3QLZkDWF3V1UlBG",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appyuuJygysW3Ljiv",
+          "mode": "list",
+          "cachedResultName": "Football test task",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbltKyolWyciOL0rC",
+          "mode": "list",
+          "cachedResultName": "Projects copy",
+          "cachedResultUrl": "https://airtable.com/appyuuJygysW3Ljiv/tbltKyolWyciOL0rC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Airtable').item.json.id }}",
+            "Teams": "={{ $json.output.teams }}",
+            "Prediction EN": "=",
+            "Prediction UA": "=",
+            "Match Date": "={{ $json.output.match_date }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Form",
+              "displayName": "Form",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Teams",
+              "displayName": "Teams",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Match Date",
+              "displayName": "Match Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Form Info",
+              "displayName": "Form Info",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prediction EN",
+              "displayName": "Prediction EN",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prediction UA",
+              "displayName": "Prediction UA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created",
+              "displayName": "Created",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        120
+      ],
+      "id": "ae24c6a1-fc06-4bff-a8ee-df63d5728109",
+      "name": "Airtable false",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "a3QLZkDWF3V1UlBG",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "New loop",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        120
+      ],
+      "id": "4ba52dfd-c562-41ab-b0d1-5fee474e48c0"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Check data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check data": {
+      "main": [
+        [
+          {
+            "node": "Airtable succes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Airtable false",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable succes": {
+      "main": [
+        [
+          {
+            "node": "New loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable false": {
+      "main": [
+        [
+          {
+            "node": "New loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New loop": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9acd9735-5394-4cee-a1fc-068fd719f1ba",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1b415f958ed703b4ef7a912849f6061f04b106471b735bb6b961a7c01e6c2b7"
+  },
+  "id": "iAXrDFhdNYlFzdhT",
+  "tags": []
+}
